@@ -35,15 +35,34 @@ phone.
 - No external frameworks or CSS libraries.
 - No build step and no package manager.
 - No backend / server code.
-- **Zero JavaScript** — no `<script>` tags, no inline event handlers.
+- No framework and no external libraries.
 - All content written literally in the HTML (not generated).
 - Responsive: usable and readable on a phone (narrow viewport).
+
+> **Change (revision 2):** the original "zero JavaScript" rule has been
+> relaxed at the user's request to enable the cursor-reactive ASCII
+> background. A single small inline vanilla `<script>` is now allowed. There
+> is still no framework, no build step, no backend, and no external library.
+
+## Interactive ASCII background (revision 2)
+- A full-screen background behind the content made of a grid of monospace
+  characters.
+- Idle state: every cell is a dim low-contrast dot (`·`).
+- Near the cursor, cells ramp up through a density gradient
+  (`·` → `:` → `+` → `*` → `#` → `@`), peaking at `@` directly under the
+  cursor, and tinted toward the single accent colour.
+- The brightening follows a smooth radial falloff around the cursor.
+- Works with mouse and touch; fades out when the pointer leaves.
+- Respects `prefers-reduced-motion` (no trailing easing for those users).
+- Must not harm readability of the page content.
 
 ## Acceptance criteria
 - Opening `index.html` directly in a browser (file://) renders the full page.
 - Page contains exactly one name, one role line, three project cards, and
   three contact links (email, GitHub, LinkedIn).
-- No `<script>` tags anywhere in the file.
+- At most one inline `<script>` (no external scripts, no framework).
+- The ASCII background reacts to the cursor: dim `·` at rest, ramping to a
+  bright accent-tinted `@` under the pointer.
 - Readable with no horizontal scrolling at 360px width.
 - Only one accent colour is used throughout.
 

@@ -32,7 +32,20 @@
         font-size: 1rem;
       }
 
+      /* ASCII background canvas */
+      #ascii-bg {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 0;
+        display: block;
+        background: var(--bg);
+      }
+
       .wrap {
+        position: relative;
+        z-index: 1;
         max-width: 720px;
         margin: 0 auto;
         padding: clamp(2rem, 6vw, 4.5rem) clamp(1.25rem, 5vw, 2rem);
@@ -45,6 +58,8 @@
 
       h1 {
         margin: 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas,
+          "Liberation Mono", monospace;
         font-size: clamp(2.25rem, 9vw, 3.5rem);
         font-weight: 800;
         letter-spacing: -0.02em;
@@ -54,6 +69,8 @@
       .role {
         margin: 0.75rem 0 0;
         color: var(--muted);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas,
+          "Liberation Mono", monospace;
         font-size: clamp(1rem, 3.5vw, 1.2rem);
         letter-spacing: 0.04em;
         text-transform: uppercase;
@@ -79,13 +96,18 @@
       .section-label {
         margin: 0 0 0.5rem;
         color: var(--muted);
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas,
+          "Liberation Mono", monospace;
         font-size: 0.8rem;
         letter-spacing: 0.12em;
         text-transform: uppercase;
       }
 
       .card {
-        background: var(--surface);
+        /* slightly translucent so the ASCII field shows through subtly */
+        background: rgba(22, 27, 34, 0.82);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
         border: 1px solid var(--border);
         border-radius: 14px;
         padding: clamp(1.5rem, 5vw, 2rem);
@@ -100,6 +122,8 @@
 
       .card h2 {
         margin: 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas,
+          "Liberation Mono", monospace;
         font-size: clamp(1.25rem, 5vw, 1.5rem);
         font-weight: 700;
       }
@@ -166,6 +190,8 @@
     </style>
   </head>
   <body>
+    <canvas id="ascii-bg" aria-hidden="true"></canvas>
+
     <div class="wrap">
       <header>
         <h1>matt.json</h1>
@@ -203,5 +229,163 @@
         </nav>
       </footer>
     </div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        var canvas = document.getElementById("ascii-bg");
+        var ctx = canvas.getContext("2d");
+
+        // Density ramp: index 0 = idle/dim, last = cursor peak.
+        var RAMP = ["·", ":", "+", "*", "#", "@"];
+        var CELL = 16; // px per cell at base scale
+        var RADIUS = 160; // px influence radius of the cursor glow
+
+        // Accent colour (#5eead4) expressed as RGB for interpolation.
+        var ACCENT = { r: 94, g: 234, b: 212 };
+        // Dim/idle glyph colour (bluish-grey, low contrast).
+        var DIM = { r: 42, g: 52, b: 64 };
+
+        var dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
+        var cols = 0;
+        var rows = 0;
+        var cellPx = CELL;
+
+        // Target + eased pointer position (smooth trailing glow).
+        var pointer = { x: -9999, y: -9999 };
+        var eased = { x: -9999, y: -9999 };
+        var hasPointer = false;
+
+        var reduceMotion = window.matchMedia(
+          "(prefers-reduced-motion: reduce)"
+        ).matches;
+
+        function resize() {
+          var w = window.innerWidth;
+          var h = window.innerHeight;
+
+          canvas.width = Math.floor(w * dpr);
+          canvas.height = Math.floor(h * dpr);
+          canvas.style.width = w + "px";
+          canvas.style.height = h + "px";
+
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+          cellPx = CELL;
+          cols = Math.ceil(w / cellPx) + 1;
+          rows = Math.ceil(h / cellPx) + 1;
+
+          ctx.font =
+            cellPx +
+            "px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+          ctx.textBaseline = "top";
+        }
+
+        function setPointer(x, y) {
+          pointer.x = x;
+          pointer.y = y;
+          if (!hasPointer) {
+            // First input: snap eased position so it doesn't fly in.
+            eased.x = x;
+            eased.y = y;
+            hasPointer = true;
+          }
+        }
+
+        function mix(a, b, t) {
+          return Math.round(a + (b - a) * t);
+        }
+
+        function draw() {
+          // Ease the glow toward the pointer for a smooth trail.
+          if (hasPointer) {
+            var k = reduceMotion ? 1 : 0.18;
+            eased.x += (pointer.x - eased.x) * k;
+            eased.y += (pointer.y - eased.y) * k;
+          }
+
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          var r2 = RADIUS * RADIUS;
+
+          for (var row = 0; row < rows; row++) {
+            for (var col = 0; col < cols; col++) {
+              var px = col * cellPx;
+              var py = row * cellPx;
+
+              var t = 0; // 0 = idle, 1 = cursor peak
+              if (hasPointer) {
+                var dx = px + cellPx / 2 - eased.x;
+                var dy = py + cellPx / 2 - eased.y;
+                var dist2 = dx * dx + dy * dy;
+                if (dist2 < r2) {
+                  // Smooth falloff: 1 at centre -> 0 at radius edge.
+                  var d = Math.sqrt(dist2) / RADIUS;
+                  t = 1 - d;
+                  t = t * t; // ease for a tighter, punchier core
+                }
+              }
+
+              var rampIndex = Math.min(
+                RAMP.length - 1,
+                Math.floor(t * RAMP.length)
+              );
+              var ch = RAMP[rampIndex];
+
+              // Colour: dim grey at idle -> accent at peak. Brightness ramps too.
+              var alpha = 0.22 + t * 0.78;
+              var cr = mix(DIM.r, ACCENT.r, t);
+              var cg = mix(DIM.g, ACCENT.g, t);
+              var cb = mix(DIM.b, ACCENT.b, t);
+
+              ctx.fillStyle =
+                "rgba(" + cr + "," + cg + "," + cb + "," + alpha + ")";
+              ctx.fillText(ch, px, py);
+            }
+          }
+
+          requestAnimationFrame(draw);
+        }
+
+        // --- Input ---
+        window.addEventListener(
+          "mousemove",
+          function (e) {
+            setPointer(e.clientX, e.clientY);
+          },
+          { passive: true }
+        );
+
+        window.addEventListener(
+          "touchmove",
+          function (e) {
+            if (e.touches && e.touches.length) {
+              setPointer(e.touches[0].clientX, e.touches[0].clientY);
+            }
+          },
+          { passive: true }
+        );
+
+        window.addEventListener("touchstart", function (e) {
+          if (e.touches && e.touches.length) {
+            setPointer(e.touches[0].clientX, e.touches[0].clientY);
+          }
+        });
+
+        // When the pointer leaves, fade the glow away.
+        window.addEventListener("mouseout", function (e) {
+          if (!e.relatedTarget) {
+            pointer.x = -9999;
+            pointer.y = -9999;
+          }
+        });
+
+        window.addEventListener("resize", resize);
+
+        resize();
+        requestAnimationFrame(draw);
+      })();
+    </script>
   </body>
 </html>

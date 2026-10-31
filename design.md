@@ -78,3 +78,46 @@ to stacked on very narrow screens. Links in accent colour with visible
 - No analytics, no cookies, no forms, no JS interactivity.
 - No dark/light toggle (dark only, as requested).
 - No images/favicons required (can be added later if you want).
+
+---
+
+## Revision 2 — Cursor-reactive ASCII background
+
+### Overview
+A fixed, full-viewport `<canvas>` (`#ascii-bg`, `z-index: 0`) sits behind the
+content (`.wrap`, `z-index: 1`). A small inline vanilla `<script>` paints a grid
+of monospace characters onto it each frame. This is the only JavaScript on the
+page — no framework, no build step, no external libraries.
+
+### Rendering model
+- The viewport is divided into ~16px cells (`cols × rows`), recomputed on resize.
+- Each frame, for every cell, we compute `t` ∈ [0, 1] from its distance to the
+  (eased) cursor position:
+  - outside the influence radius (~160px): `t = 0` → idle.
+  - at the cursor: `t ≈ 1` → peak. A squared falloff gives a tight, punchy core.
+- `t` selects a glyph from the density ramp `· : + * # @` (idle → peak) and
+  interpolates colour from a dim blue-grey to the accent `#5eead4`, with alpha
+  ramping from ~0.22 to ~1.0.
+
+### Motion & input
+- The glow position eases toward the real pointer (~0.18 lerp) for a smooth
+  trailing feel; snaps on first input so it doesn't fly in from the corner.
+- Mouse (`mousemove`) and touch (`touchstart`/`touchmove`) supported.
+- Pointer leaving the window parks the glow off-screen → field returns to idle.
+- `prefers-reduced-motion: reduce` disables the easing (glow tracks instantly,
+  no trailing animation).
+
+### Readability
+- Cards are made slightly translucent (`rgba(22,27,34,.82)`) with a light
+  `backdrop-filter: blur(2px)` so the ASCII field is subtly visible behind them
+  without hurting text contrast. Headings/labels switch to a monospace stack to
+  match the techy aesthetic.
+
+### Performance notes
+- `devicePixelRatio` capped at 2 to limit fill work on high-DPI screens.
+- Single `requestAnimationFrame` loop; `clearRect` + `fillText` per cell. Cell
+  size keeps the per-frame cell count moderate on typical viewports.
+
+### Accessibility
+- Canvas is decorative: `aria-hidden="true"`, not focusable, conveys no content.
+- All page information remains in the HTML and is unaffected by the canvas.

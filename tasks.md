@@ -36,6 +36,19 @@
     three cards, three contact links.
   - _Covers: acceptance criteria._
 
+## Revision 2 — cursor-reactive ASCII background
+
+- [x] 9. Add fixed full-viewport `<canvas id="ascii-bg">` behind content.
+- [x] 10. Inline vanilla `<script>`: cell grid, resize handling, DPR cap.
+- [x] 11. Cursor glow: distance → `t` → density ramp (`· : + * # @`) + accent
+      colour interpolation with radial falloff.
+- [x] 12. Input: mouse + touch; eased trailing glow; fade-out on pointer leave;
+      honour `prefers-reduced-motion`.
+- [x] 13. Readability: translucent cards + blur so background shows through;
+      monospace headings for the techy look.
+- [x] 14. Verify: exactly one inline script, no external resources, one accent
+      colour, 3 cards, 3 contact links.
+
 ## Note on content
 Build will use clear placeholders (`YOUR NAME`, project titles, `you@example.com`,
 GitHub/LinkedIn URLs). Provide the real values anytime and I'll substitute them —
