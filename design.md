@@ -178,3 +178,38 @@ two inline `<script>`s (ASCII background + card game), no framework/build/backen
 - Cards are focusable buttons with labels; CTA and reset are real `<button>`s.
 - `prefers-reduced-motion: reduce` collapses transition/animation durations so
   the sequence resolves near-instantly without heavy motion.
+
+---
+
+## Revision 4 — Two-card collision merge + project reveal + floating CTA
+
+### Deck
+Reduced to **2 cards** (since cards fuse in pairs), so the flow is a clean
+**2 → 1**.
+
+### Collision merge (replaces absorb)
+- When both cards are face-up, `maybeCollide()` computes the **midpoint** between
+  the two card centers.
+- Each card gets `--cx/--cy` CSS variables and the `.collide` class, animating
+  it toward that midpoint (opposite directions, converging) while scaling down.
+- On contact, `spawnImpact(mx, my)` creates a fixed-position `.impact` dot that
+  runs the `burst` keyframe (an accent shockwave) at the collision point.
+- One card is kept as the survivor and re-shown as the **merged** Lv.2 card with
+  a `mergein` pop; the other is removed (`.gone`). Then the finale runs.
+
+### Final reveal shows all projects
+- The `.surprise` block now contains a `.reveal-projects` grid. Each project is
+  an `<a class="proj">` (name, one-line description, "Open project →") that
+  **links to that project** and opens in a new tab (`target="_blank"`,
+  `rel="noopener"`). Currently `href="#"` placeholders pending real URLs.
+- Grid is responsive (`auto-fit, minmax(220px, 1fr)`), so it stacks on phones.
+
+### Floating "Let's talk" CTA
+- A `.cta-float` `<button>` is `position: fixed` at bottom-right (`z-index: 5`),
+  so it's reachable at any scroll position without scrolling. It mirrors the
+  in-reveal CTA; both call `openTalk()` → the mailto link.
+
+### Notes
+- Single accent colour preserved; level differences and the impact use accent at
+  varied opacity only. Light-mode palette still applies on reveal.
+- `prefers-reduced-motion` collapses the collide/merge/impact animations.

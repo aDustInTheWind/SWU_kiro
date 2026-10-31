@@ -68,3 +68,18 @@ either before I build or after.
       via Pointer Events (one gesture flips multiple). touch-action: pan-y.
 - [x] 21. Reset ("play again") restores all four cards and dark mood.
 - [x] 22. Respect prefers-reduced-motion; verify one accent colour, single file.
+
+## Revision 4 — two cards, collision merge, project reveal, floating CTA
+
+- [x] 23. Reduce deck to 2 cards; flow is now 2 → 1.
+- [x] 24. Replace "absorb" with a COLLISION: both face-up cards slide toward
+      their shared midpoint, an accent impact burst fires, then they merge into
+      one Lv.2 card (mergein pop).
+- [x] 25. Final reveal now shows a grid of the real projects, each a clickable
+      link that opens the project (target=_blank). Placeholder href="#" until
+      real URLs are supplied.
+- [x] 26. Add an always-visible floating "Let's talk" button (fixed bottom-right,
+      no scrolling needed) in addition to the one inside the reveal. Both open
+      the mailto.
+- [x] 27. Keep swipe/drag + click + keyboard input; reset restores two cards;
+      respect prefers-reduced-motion.

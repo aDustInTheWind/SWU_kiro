@@ -128,22 +128,23 @@
         flex-wrap: wrap;
         justify-content: center;
         align-items: center;
-        gap: clamp(0.75rem, 3vw, 1.5rem);
+        gap: clamp(1rem, 6vw, 3rem);
         perspective: 1400px;
-        touch-action: pan-y; /* allow vertical scroll, we handle horizontal swipe */
+        touch-action: pan-y; /* allow vertical scroll; we handle horizontal swipe */
         min-height: 300px;
       }
 
       .card {
         position: relative;
-        width: clamp(110px, 24vw, 160px);
+        width: clamp(120px, 30vw, 170px);
         aspect-ratio: 5 / 7;
         transform-style: preserve-3d;
         transition: transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1),
-          opacity 0.45s ease, width 0.45s ease, box-shadow 0.45s ease;
+          opacity 0.4s ease, box-shadow 0.45s ease;
         cursor: pointer;
         user-select: none;
         -webkit-user-select: none;
+        will-change: transform;
       }
 
       .card .face {
@@ -248,45 +249,69 @@
         box-shadow: inset 0 0 0 1px rgba(94, 234, 212, 0.25);
       }
       .card.lv2 {
-        box-shadow: 0 0 22px rgba(94, 234, 212, 0.25);
+        box-shadow: 0 0 44px rgba(94, 234, 212, 0.5);
       }
       .card.lv2 .front {
-        box-shadow: inset 0 0 0 2px rgba(94, 234, 212, 0.45);
-      }
-      .card.lv3 {
-        box-shadow: 0 0 34px rgba(94, 234, 212, 0.4);
-      }
-      .card.lv3 .front {
-        box-shadow: inset 0 0 0 2px rgba(94, 234, 212, 0.7);
-      }
-      .card.lv4 {
-        box-shadow: 0 0 60px rgba(94, 234, 212, 0.65);
-      }
-      .card.lv4 .front {
-        box-shadow: inset 0 0 0 3px rgba(94, 234, 212, 1);
+        box-shadow: inset 0 0 0 3px rgba(94, 234, 212, 0.9);
       }
 
-      /* Fuse-out: a card being absorbed slides/scales toward its target */
-      .card.fusing {
+      /* Collision: each card slides toward the midpoint, set via CSS var. */
+      .card.collide {
+        transition: transform 0.4s cubic-bezier(0.5, 0, 0.75, 0),
+          opacity 0.4s ease;
+        transform: translate(var(--cx, 0), var(--cy, 0)) rotateY(180deg)
+          scale(0.55);
+      }
+      .card.collide.spent {
         opacity: 0;
-        transform: scale(0.4) rotateY(180deg);
-        pointer-events: none;
       }
 
-      /* Level-up pulse on the surviving card */
-      @keyframes levelpulse {
+      /* Impact flash at the collision point */
+      .impact {
+        position: fixed;
+        z-index: 3;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--accent);
+        pointer-events: none;
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0.9;
+      }
+      @keyframes burst {
         0% {
-          transform: rotateY(180deg) scale(1);
+          transform: translate(-50%, -50%) scale(0);
+          opacity: 0.95;
         }
-        40% {
-          transform: rotateY(180deg) scale(1.14);
+        100% {
+          transform: translate(-50%, -50%) scale(26);
+          opacity: 0;
+        }
+      }
+      .impact.go {
+        animation: burst 0.5s ease-out forwards;
+      }
+
+      /* Merged card appears at the midpoint, then settles. */
+      .card.merged {
+        position: relative;
+      }
+      @keyframes mergein {
+        0% {
+          transform: rotateY(180deg) scale(0.2);
+          opacity: 0;
+        }
+        55% {
+          transform: rotateY(180deg) scale(1.18);
+          opacity: 1;
         }
         100% {
           transform: rotateY(180deg) scale(1);
+          opacity: 1;
         }
       }
-      .card.levelup {
-        animation: levelpulse 0.5s ease;
+      .card.mergein {
+        animation: mergein 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.2);
       }
 
       /* Final anticipation: the sole card charges up before reveal */
@@ -323,7 +348,7 @@
           box-shadow: 0 0 90px rgba(94, 234, 212, 0.9);
         }
         100% {
-          transform: rotateY(180deg) scale(1.15);
+          transform: rotateY(180deg) scale(1.1);
         }
       }
       .card.final {
@@ -350,11 +375,55 @@
         font-size: clamp(1.4rem, 5vw, 2.1rem);
         margin: 0 0 0.5rem;
       }
-      .surprise p {
+      .surprise .lead {
         color: var(--muted);
-        margin: 0 auto 1.5rem;
-        max-width: 42ch;
+        margin: 0 auto 2rem;
+        max-width: 46ch;
       }
+
+      /* Projects grid inside the reveal */
+      .reveal-projects {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+        margin: 0 auto 2rem;
+        max-width: 640px;
+        text-align: left;
+      }
+      .proj {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 1.25rem;
+        transition: border-color 0.18s ease, transform 0.18s ease,
+          box-shadow 0.18s ease;
+      }
+      .proj:hover,
+      .proj:focus-visible {
+        border-color: var(--accent);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(94, 234, 212, 0.18);
+      }
+      .proj .pname {
+        font-family: var(--mono);
+        font-weight: 700;
+        font-size: 1.05rem;
+      }
+      .proj .pdesc {
+        margin: 0.35rem 0 0.75rem;
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .proj .pgo {
+        font-family: var(--mono);
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--accent);
+      }
+
       .cta {
         display: inline-block;
         font-family: var(--mono);
@@ -374,6 +443,30 @@
       .cta:focus-visible {
         transform: translateY(-2px);
         box-shadow: 0 0 36px rgba(94, 234, 212, 0.75);
+      }
+
+      /* Floating, always-visible "Let's talk" button (no scroll needed) */
+      .cta-float {
+        position: fixed;
+        right: clamp(1rem, 4vw, 2rem);
+        bottom: clamp(1rem, 4vw, 2rem);
+        z-index: 5;
+        font-family: var(--mono);
+        font-weight: 700;
+        color: #0e1116;
+        background: var(--accent);
+        border: none;
+        cursor: pointer;
+        padding: 0.85rem 1.4rem;
+        border-radius: 999px;
+        font-size: 0.95rem;
+        box-shadow: 0 6px 24px rgba(94, 234, 212, 0.45);
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+      }
+      .cta-float:hover,
+      .cta-float:focus-visible {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 32px rgba(94, 234, 212, 0.7);
       }
 
       .reset {
@@ -419,10 +512,11 @@
       }
 
       a:focus-visible,
-      .card:focus-visible {
+      .card:focus-visible,
+      .cta-float:focus-visible {
         outline: 2px solid var(--accent);
         outline-offset: 3px;
-        border-radius: 3px;
+        border-radius: 999px;
       }
 
       @media (prefers-reduced-motion: reduce) {
@@ -434,7 +528,8 @@
         }
         .card.anticipating,
         .card.final,
-        .card.levelup {
+        .card.mergein,
+        .impact.go {
           animation-duration: 0.01ms !important;
           animation-iteration-count: 1 !important;
         }
@@ -460,8 +555,8 @@
       <section class="hero" aria-label="Interactive project cards">
         <p class="section-label">Projects</p>
         <p class="hint" id="hint">
-          Click or swipe across the cards to flip them. Matching cards fuse and
-          level up&hellip;
+          Click or swipe across both cards to flip them &mdash; then watch them
+          collide into one&hellip;
         </p>
 
         <div class="deck" id="deck">
@@ -473,7 +568,7 @@
             </div>
             <div class="face front">
               <span class="lvl">Lv.1</span>
-              <span class="title">Project 01</span>
+              <span class="title">Project A</span>
               <span class="sub">placeholder</span>
               <span class="pip">◆</span>
             </div>
@@ -487,35 +582,7 @@
             </div>
             <div class="face front">
               <span class="lvl">Lv.1</span>
-              <span class="title">Project 02</span>
-              <span class="sub">placeholder</span>
-              <span class="pip">◆</span>
-            </div>
-          </div>
-
-          <div class="card" tabindex="0" role="button" aria-label="Flip card 3" data-id="3">
-            <div class="face back">
-              <span class="corner tl">M</span>
-              <span class="mark">&lt;/&gt;</span>
-              <span class="corner br">M</span>
-            </div>
-            <div class="face front">
-              <span class="lvl">Lv.1</span>
-              <span class="title">Project 03</span>
-              <span class="sub">placeholder</span>
-              <span class="pip">◆</span>
-            </div>
-          </div>
-
-          <div class="card" tabindex="0" role="button" aria-label="Flip card 4" data-id="4">
-            <div class="face back">
-              <span class="corner tl">M</span>
-              <span class="mark">&lt;/&gt;</span>
-              <span class="corner br">M</span>
-            </div>
-            <div class="face front">
-              <span class="lvl">Lv.1</span>
-              <span class="title">Project 04</span>
+              <span class="title">Project B</span>
               <span class="sub">placeholder</span>
               <span class="pip">◆</span>
             </div>
@@ -524,10 +591,24 @@
 
         <div class="surprise" id="surprise">
           <h2>Surprise!</h2>
-          <p>
+          <p class="lead">
             You get a special discount from me: let&rsquo;s talk about your
-            project!
+            project! Here&rsquo;s what I&rsquo;ve been building:
           </p>
+
+          <div class="reveal-projects">
+            <a class="proj" href="#" target="_blank" rel="noopener">
+              <span class="pname">ClockIn</span>
+              <p class="pdesc">A gamified logbook website.</p>
+              <span class="pgo">Open project →</span>
+            </a>
+            <a class="proj" href="#" target="_blank" rel="noopener">
+              <span class="pname">Komsai Week</span>
+              <p class="pdesc">CS week, 30th anniversary edition.</p>
+              <span class="pgo">Open project →</span>
+            </a>
+          </div>
+
           <button class="cta" type="button" id="cta">Let&rsquo;s talk →</button>
           <br />
           <button class="reset" type="button" id="reset">↺ Play again</button>
@@ -543,6 +624,9 @@
         </nav>
       </footer>
     </div>
+
+    <!-- Always-visible floating CTA -->
+    <button class="cta-float" type="button" id="cta-float">Let&rsquo;s talk →</button>
 
     <!-- ASCII cursor-reactive background -->
     <script>
@@ -636,7 +720,7 @@
       })();
     </script>
 
-    <!-- Card game: flip, fuse, level up, final reveal -->
+    <!-- Card game: flip, collide into one, final reveal -->
     <script>
       (function () {
         "use strict";
@@ -645,25 +729,28 @@
         var surprise = document.getElementById("surprise");
         var resetBtn = document.getElementById("reset");
         var ctaBtn = document.getElementById("cta");
+        var ctaFloat = document.getElementById("cta-float");
         var hint = document.getElementById("hint");
         var body = document.body;
+
+        var MAILTO =
+          "mailto:you@example.com?subject=Let%27s%20talk%20about%20a%20project";
 
         var reduceMotion = window.matchMedia(
           "(prefers-reduced-motion: reduce)"
         ).matches;
 
-        var busy = false; // locks input during fuse/reveal animations
+        var busy = false;
         var finished = false;
 
-        function cards() {
+        function liveCards() {
           return Array.prototype.slice.call(
             deck.querySelectorAll(".card:not(.gone)")
           );
         }
 
-        // Level up the title/level label on a surviving card's front face.
         function setLevel(card, level) {
-          card.classList.remove("lv1", "lv2", "lv3", "lv4");
+          card.classList.remove("lv1", "lv2");
           card.classList.add("lv" + level);
           card.dataset.level = String(level);
           var lvl = card.querySelector(".lvl");
@@ -672,88 +759,103 @@
           var pip = card.querySelector(".pip");
           if (lvl) lvl.textContent = "Lv." + level;
           if (pip) pip.textContent = new Array(level + 1).join("◆");
-          if (level >= 2 && title) title.textContent = "Fusion " + level;
-          if (level >= 2 && sub) sub.textContent = "upgraded";
-          if (sub && level >= 4) sub.textContent = "max power";
+          if (level >= 2) {
+            if (title) title.textContent = "Fusion";
+            if (sub) sub.textContent = "max power";
+          }
         }
 
-        // Flip a single card face-up, then try to resolve a fusion.
         function flip(card) {
           if (busy || finished) return;
           if (card.classList.contains("flipped")) return;
           card.classList.add("flipped");
           if (!card.dataset.level) setLevel(card, 1);
-          // After the flip settles, check for two face-up cards to fuse.
-          window.setTimeout(resolve, reduceMotion ? 10 : 420);
+          window.setTimeout(maybeCollide, reduceMotion ? 10 : 420);
         }
 
-        // If two or more face-up cards exist, fuse the newest into the
-        // strongest survivor and level it up. 4 -> 3 -> 2 -> 1.
-        function resolve() {
+        // Two face-up cards collide at their midpoint and merge into one.
+        function maybeCollide() {
           if (busy || finished) return;
-          var faceUp = cards().filter(function (c) {
+          var up = liveCards().filter(function (c) {
             return c.classList.contains("flipped");
           });
-          if (faceUp.length < 2) return;
+          if (up.length < 2) return;
 
           busy = true;
+          var a = up[0];
+          var b = up[1];
+          var ra = a.getBoundingClientRect();
+          var rb = b.getBoundingClientRect();
 
-          // Survivor = highest current level (first one wins ties).
-          faceUp.sort(function (a, b) {
-            return (b.dataset.level || 1) - (a.dataset.level || 1);
-          });
-          var survivor = faceUp[0];
-          var absorbed = faceUp[1];
+          // Midpoint between the two card centers.
+          var ax = ra.left + ra.width / 2;
+          var ay = ra.top + ra.height / 2;
+          var bx = rb.left + rb.width / 2;
+          var by = rb.top + rb.height / 2;
+          var mx = (ax + bx) / 2;
+          var my = (ay + by) / 2;
 
-          var survLevel = parseInt(survivor.dataset.level || "1", 10);
-          var newLevel = Math.min(4, survLevel + 1);
+          // Each card travels toward the midpoint (opposite directions).
+          a.style.setProperty("--cx", mx - ax + "px");
+          a.style.setProperty("--cy", my - ay + "px");
+          b.style.setProperty("--cx", mx - bx + "px");
+          b.style.setProperty("--cy", my - by + "px");
+          a.classList.add("collide");
+          b.classList.add("collide");
 
-          // Animate the absorbed card toward the survivor, then remove it.
-          var sRect = survivor.getBoundingClientRect();
-          var aRect = absorbed.getBoundingClientRect();
-          absorbed.style.transition =
-            "transform .45s ease, opacity .45s ease";
-          absorbed.style.transform =
-            "translate(" +
-            (sRect.left - aRect.left) +
-            "px," +
-            (sRect.top - aRect.top) +
-            "px) rotateY(180deg) scale(.3)";
-          absorbed.style.opacity = "0";
+          var travel = reduceMotion ? 10 : 400;
 
-          window.setTimeout(
-            function () {
-              absorbed.classList.add("gone");
-              absorbed.style.display = "none";
+          window.setTimeout(function () {
+            // Impact flash at the midpoint.
+            spawnImpact(mx, my);
 
-              setLevel(survivor, newLevel);
-              survivor.classList.add("levelup");
-              window.setTimeout(function () {
-                survivor.classList.remove("levelup");
-              }, 500);
+            // Both cards are spent; keep `a` as the merged survivor.
+            a.classList.add("spent");
+            b.classList.add("spent");
 
-              busy = false;
+            window.setTimeout(
+              function () {
+                b.classList.add("gone");
+                b.style.display = "none";
 
-              // Any still-face-down cards? Keep going. Otherwise we may
-              // need a chained fusion or the final reveal.
-              var remaining = cards();
-              if (remaining.length === 1) {
-                finalReveal(remaining[0]);
-              } else {
-                // If another face-up card is already waiting, chain-fuse.
-                var stillUp = remaining.filter(function (c) {
-                  return c.classList.contains("flipped");
-                });
-                if (stillUp.length >= 2) {
-                  window.setTimeout(resolve, reduceMotion ? 10 : 250);
-                }
-              }
-            },
-            reduceMotion ? 10 : 460
-          );
+                // Reset `a` into the merged, leveled-up card.
+                a.classList.remove("collide", "spent");
+                a.style.removeProperty("--cx");
+                a.style.removeProperty("--cy");
+                a.classList.add("merged", "mergein");
+                setLevel(a, 2);
+                window.setTimeout(function () {
+                  a.classList.remove("mergein");
+                }, reduceMotion ? 10 : 560);
+
+                busy = false;
+                // Sole survivor -> go to the finale.
+                window.setTimeout(
+                  function () {
+                    finalReveal(a);
+                  },
+                  reduceMotion ? 10 : 650
+                );
+              },
+              reduceMotion ? 10 : 180
+            );
+          }, travel);
         }
 
-        // The sole remaining card: anticipation, then reveal + light mood.
+        function spawnImpact(x, y) {
+          var dot = document.createElement("div");
+          dot.className = "impact";
+          dot.style.left = x + "px";
+          dot.style.top = y + "px";
+          document.body.appendChild(dot);
+          // force reflow then animate
+          void dot.offsetWidth;
+          dot.classList.add("go");
+          window.setTimeout(function () {
+            if (dot.parentNode) dot.parentNode.removeChild(dot);
+          }, reduceMotion ? 20 : 520);
+        }
+
         function finalReveal(card) {
           if (finished) return;
           finished = true;
@@ -761,13 +863,11 @@
           if (hint) hint.style.visibility = "hidden";
 
           card.classList.add("anticipating");
-          var antDur = reduceMotion ? 20 : 1250; // 3 × ~0.4s
+          var antDur = reduceMotion ? 20 : 1250;
 
           window.setTimeout(function () {
             card.classList.remove("anticipating");
             card.classList.add("final");
-
-            // Mood flips to light.
             body.classList.add("lit");
 
             window.setTimeout(
@@ -782,14 +882,11 @@
         }
 
         /* ---------- Input: click + keyboard + swipe/drag ---------- */
-
-        // Click / tap
         deck.addEventListener("click", function (e) {
           var card = e.target.closest(".card");
           if (card && !card.classList.contains("gone")) flip(card);
         });
 
-        // Keyboard (Enter / Space) for accessibility
         deck.addEventListener("keydown", function (e) {
           if (e.key === "Enter" || e.key === " ") {
             var card = e.target.closest(".card");
@@ -800,10 +897,8 @@
           }
         });
 
-        // Swipe / drag: flip every card the pointer passes over in one gesture.
         var dragging = false;
-        var swiped = {}; // guards against re-flipping within a single gesture
-
+        var swiped = {};
         function cardAtPoint(x, y) {
           var el = document.elementFromPoint(x, y);
           return el ? el.closest(".card") : null;
@@ -820,8 +915,6 @@
             flip(card);
           }
         }
-
-        // Pointer events cover mouse + touch + pen uniformly.
         deck.addEventListener("pointerdown", function (e) {
           dragging = true;
           swiped = {};
@@ -855,15 +948,17 @@
             card.dataset.id = String(i + 1);
             card.querySelector(".lvl").textContent = "Lv.1";
             card.querySelector(".title").textContent =
-              "Project 0" + (i + 1);
+              i === 0 ? "Project A" : "Project B";
             card.querySelector(".sub").textContent = "placeholder";
             card.querySelector(".pip").textContent = "◆";
           });
         });
 
-        ctaBtn.addEventListener("click", function () {
-          window.location.href = "mailto:you@example.com?subject=Let%27s%20talk%20about%20a%20project";
-        });
+        function openTalk() {
+          window.location.href = MAILTO;
+        }
+        ctaBtn.addEventListener("click", openTalk);
+        ctaFloat.addEventListener("click", openTalk);
       })();
     </script>
   </body>
