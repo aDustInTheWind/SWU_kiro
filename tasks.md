@@ -53,3 +53,18 @@
 Build will use clear placeholders (`YOUR NAME`, project titles, `you@example.com`,
 GitHub/LinkedIn URLs). Provide the real values anytime and I'll substitute them —
 either before I build or after.
+
+## Revision 3 — interactive playing-card hero
+
+- [x] 15. Replace static projects list with a 4-card deck (5:7 playing-card
+      shape, face-down backs with accent pattern).
+- [x] 16. 3D flip on reveal (preserve-3d + backface-visibility + .flipped).
+- [x] 17. Auto-fuse two face-up cards → absorb animation → survivor levels up
+      (4 → 3 → 2 → 1), with intensifying accent glow and level-up pulse.
+- [x] 18. Final card: anticipation (charge) animation → final pop → reveal.
+- [x] 19. Mood turns light (body.lit palette swap + ASCII dimmed) and the
+      "Surprise! ... special discount ... Let's talk" message + CTA button fade in.
+- [x] 20. Input: click/tap, keyboard (Enter/Space), and swipe/drag across cards
+      via Pointer Events (one gesture flips multiple). touch-action: pan-y.
+- [x] 21. Reset ("play again") restores all four cards and dark mood.
+- [x] 22. Respect prefers-reduced-motion; verify one accent colour, single file.

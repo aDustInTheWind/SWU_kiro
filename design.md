@@ -121,3 +121,60 @@ page — no framework, no build step, no external libraries.
 ### Accessibility
 - Canvas is decorative: `aria-hidden="true"`, not focusable, conveys no content.
 - All page information remains in the HTML and is unaffected by the canvas.
+
+---
+
+## Revision 3 — Interactive playing-card hero (flip → fuse → reveal)
+
+### Overview
+The "Projects" area becomes an interactive hero. Four playing-card-shaped cards
+(5:7 aspect) start face-down. The user flips them by **click/tap**, by
+**keyboard** (Enter/Space), or by **swiping/dragging** across several in one
+gesture. Face-up cards auto-fuse and level up (4 → 3 → 2 → 1). The final card
+plays an anticipation animation, reveals, the page mood turns light, and a
+surprise discount message + CTA appears. A subtle "play again" reset replays it.
+This replaces the old static 3-item project list. Still one file; the only JS is
+two inline `<script>`s (ASCII background + card game), no framework/build/backend.
+
+### Card structure & 3D flip
+- Each `.card` has two `.face` children: `.back` (shown first) and `.front`
+  (`rotateY(180deg)`), with `transform-style: preserve-3d` and
+  `backface-visibility: hidden` on the faces. Adding `.flipped` rotates the card
+  180° to show the front.
+- The back uses an accent-tinted hatched pattern + `</>` mark + corner letters so
+  it reads as a "playing card". The front shows a level label, title, a
+  placeholder sub, and ◆ pips.
+
+### Fusion & leveling (4 → 3 → 2 → 1)
+- When two cards are face-up, `resolve()` picks the highest-level card as the
+  **survivor** and animates the other (the **absorbed**) translating toward the
+  survivor, scaling down, and fading out before it's removed (`.gone`).
+- The survivor levels up (`setLevel`): Lv.1 → Lv.2 → Lv.3 → Lv.4, its title
+  becomes "Fusion N", pip count grows, and its accent glow intensifies
+  (box-shadow alpha ramps — still the single accent colour, only opacity varies).
+- A `levelpulse` keyframe gives a satisfying scale bump on each level-up.
+- Fusions chain if multiple cards are already face-up (e.g. from a fast swipe).
+
+### Final reveal
+- When one card remains, `finalReveal()` runs the `anticipate` keyframe 3× (a
+  charging shake/brighten), then a `finalpop`, then adds `.lit` to `<body>`.
+- `.lit` swaps the CSS custom properties to a **light palette** (light bg, dark
+  text) with a 1.1s transition, and dims the ASCII canvas to 25% opacity.
+- The `.surprise` block fades/slides in: heading, the discount line, a pill CTA
+  (mailto), and a muted "↺ Play again" reset.
+
+### Input model
+- **Click/tap:** delegated `click` on the deck → `flip(card)`.
+- **Keyboard:** Enter/Space on a focused card (cards are `role="button"`,
+  `tabindex="0"`).
+- **Swipe/drag:** Pointer Events (`pointerdown/move/up`) unify mouse + touch +
+  pen. While dragging, `elementFromPoint` finds the card under the pointer and
+  flips each one once per gesture (a `swiped` map prevents double-flips). The
+  deck uses `touch-action: pan-y` so vertical page scroll still works.
+- An input lock (`busy`) prevents interaction mid-animation; `finished` guards
+  the end state.
+
+### Accessibility / motion
+- Cards are focusable buttons with labels; CTA and reset are real `<button>`s.
+- `prefers-reduced-motion: reduce` collapses transition/animation durations so
+  the sequence resolves near-instantly without heavy motion.
